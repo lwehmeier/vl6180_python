@@ -136,6 +136,7 @@ class VL6180X:
         else:
             print "ToF sensor reset failure."
             self.ready = False
+            return
 
         # Required by datasheet
         # http://www.st.com/st-web-ui/static/active/en/resource/technical/document/application_note/DM00122600.pdf
@@ -169,6 +170,32 @@ class VL6180X:
         self.set_register(0x01ac, 0x3e)
         self.set_register(0x01a7, 0x1f)
         self.set_register(0x0030, 0x00)
+
+        #appnote recommended
+        self.set_register(0x0011, 0x10)
+        self.set_register(0x010a, 0x30)
+        self.set_register(0x003f, 0x46)
+        self.set_register(0x0031, 0xff)
+        self.set_register(0x0040, 0x63)
+        self.set_register(0x002e, 0x01)
+        self.set_register(0x001b, 0x09)
+        self.set_register(0x003e, 0x31)
+        self.set_register(0x0014, 0x24)
+
+        # clr reset
+        self.set_register(0x0016, 0x00)
+
+
+        #la dump from adf library
+        self.set_register(0x0014, 0x24)
+        self.set_register(0x0040, 0x00)
+        self.set_register(0x0041, 0x64)
+        self.set_register(0x003f, 0x42)
+        self.set_register(0x0038, 0x01)
+        self.set_register(0x0018, 0x03)
+
+        self.set_register(0x0096, 127)
+
         if self.debug:
             print"Register settings:"
             print"0x0207 - %x" % self.get_register(0x0207)
@@ -203,18 +230,15 @@ class VL6180X:
             print"0x0030 - %x" % self.get_register(0x0030)
 
     def default_settings(self):
-        # Recommended settings from datasheet
-        # http://www.st.com/st-web-ui/static/active/en/resource/technical/document/application_note/DM00122600.pdf
-        # Set GPIO1 high when sample complete
-        self.set_register(self.__VL6180X_SYSTEM_MODE_GPIO1, 0x10)
-        # Set Avg sample period
+        self.set_register(self.__VL6180X_SYSRANGE_MAX_CONVERGENCE_TIME, 0x30)
+        self.set_register(self.__VL6180X_INTERLEAVED_MODE_ENABLE, 0x00)
         self.set_register(self.__VL6180X_READOUT_AVERAGING_SAMPLE_PERIOD, 0x30)
         # Set the ALS gain
         self.set_register(self.__VL6180X_SYSALS_ANALOGUE_GAIN, 0x46)
         # Set auto calibration period (Max = 255)/(OFF = 0)
         self.set_register(self.__VL6180X_SYSRANGE_VHV_REPEAT_RATE, 0xFF)
         # Set ALS integration time to 100ms
-        self.set_register(self.__VL6180X_SYSALS_INTEGRATION_PERIOD, 0x63)
+        self.set_register(self.__VL6180X_SYSALS_INTEGRATION_PERIOD, 0x50)
         # perform a single temperature calibration
         self.set_register(self.__VL6180X_SYSRANGE_VHV_RECALIBRATE, 0x01)
 
@@ -225,18 +249,20 @@ class VL6180X:
         # Set default ALS inter-measurement period to 100ms
         self.set_register(self.__VL6180X_SYSALS_INTERMEASUREMENT_PERIOD, 0x31)
         # Configures interrupt on 'New Sample Ready threshold event' 
-        self.set_register(self.__VL6180X_SYSTEM_INTERRUPT_CONFIG_GPIO, 0x24)
+        self.set_register(self.__VL6180X_SYSTEM_INTERRUPT_CONFIG_GPIO, 0x01)
 
         # Additional settings defaults from community
-        self.set_register(self.__VL6180X_SYSRANGE_MAX_CONVERGENCE_TIME, 0x32)
-        self.set_register(
-            self.__VL6180X_SYSRANGE_RANGE_CHECK_ENABLES, 0x10 | 0x01)
-        self.set_register_16bit(
-            self.__VL6180X_SYSRANGE_EARLY_CONVERGENCE_ESTIMATE, 0x7B)
-        self.set_register_16bit(self.__VL6180X_SYSALS_INTEGRATION_PERIOD, 0x64)
-        self.set_register(self.__VL6180X_SYSALS_ANALOGUE_GAIN, 0x40)
-        self.set_register(self.__VL6180X_FIRMWARE_RESULT_SCALER, 0x01)
-
+        #self.set_register(self.__VL6180X_SYSRANGE_MAX_CONVERGENCE_TIME, 0x32)
+        #self.set_register(
+        #    self.__VL6180X_SYSRANGE_RANGE_CHECK_ENABLES, 0x10 | 0x01)
+        #self.set_register_16bit(
+        #    self.__VL6180X_SYSRANGE_EARLY_CONVERGENCE_ESTIMATE, 0x7B)
+        #self.set_register_16bit(self.__VL6180X_SYSALS_INTEGRATION_PERIOD, 0x64)
+        #self.set_register(self.__VL6180X_SYSALS_ANALOGUE_GAIN, 0x40)
+        #self.set_register(self.__VL6180X_FIRMWARE_RESULT_SCALER, 0x01)
+        time.sleep(1.5)
+        self.set_register(self.__VL6180X_SYSRANGE_INTERMEASUREMENT_PERIOD, 0x05)
+        self.set_register(self.__VL6180X_SYSRANGE_START, 0x03) #range continous
         if self.debug:
             print "Default settings:"
             print "SYSTEM_MODE_GPIO1 - %x" % \
@@ -310,13 +336,13 @@ class VL6180X:
 
     def get_distance(self):
         # Start Single shot mode
-        self.set_register(self.__VL6180X_SYSRANGE_START, 0x01)
-        time.sleep(0.010)
-        if self.debug:
-            print "Range status: %x" % \
-                  self.get_register(self.__VL6180X_RESULT_RANGE_STATUS) & 0xF1
+        #self.set_register(self.__VL6180X_SYSRANGE_START, 0x01)
+        #time.sleep(0.010)
+        #if self.debug:
+        #    print "Range status: %x" % \
+        #          (self.get_register(self.__VL6180X_RESULT_RANGE_STATUS) & 0xFF)
         distance = self.get_register(self.__VL6180X_RESULT_RANGE_VAL)
-        self.set_register(self.__VL6180X_SYSTEM_INTERRUPT_CLEAR, 0x07)
+        self.set_register(self.__VL6180X_SYSTEM_INTERRUPT_CLEAR, 0x01)
         return distance
 
     def get_ambient_light(self, als_gain):
