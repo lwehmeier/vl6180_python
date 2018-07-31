@@ -191,10 +191,10 @@ class VL6180X:
         self.set_register(0x0040, 0x00)
         self.set_register(0x0041, 0x64)
         self.set_register(0x003f, 0x42)
-        self.set_register(0x0038, 0x01)
-        self.set_register(0x0018, 0x03)
+        #self.set_register(0x0038, 0x01)
+        #self.set_register(0x0018, 0x03)
 
-        self.set_register(0x0096, 127)
+        #self.set_register(0x0096, 127)
 
         if self.debug:
             print"Register settings:"
@@ -386,6 +386,13 @@ class VL6180X:
             0.32 * (als_raw / als_gain_actual) * als_integration_period
 
         return als_calculated
+    def start(self):
+         self.set_register(self.__VL6180X_SYSRANGE_START, 0x03)
+    def set_scale(self, val):
+        if val ==2:
+            self.set_register_16bit(0x0096, 127)
+        if val == 1:
+            self.set_register_16bit(0x0096, 253)
 
     def get_register(self, register_address):
         a1 = (register_address >> 8) & 0xFF
