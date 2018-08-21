@@ -386,6 +386,8 @@ class VL6180X:
             0.32 * (als_raw / als_gain_actual) * als_integration_period
 
         return als_calculated
+    def stop(self):
+        self.set_register(self.__VL6180X_SYSRANGE_START, 0x00)
     def start(self):
          self.set_register(self.__VL6180X_SYSRANGE_START, 0x03)
     def set_scale(self, val):
